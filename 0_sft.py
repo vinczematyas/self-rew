@@ -5,7 +5,7 @@ from termcolor import colored
 
 from src.model import load_model, get_peft_model
 from src.trainer import get_sft_trainer
-from src.data import load_alpaca_ds
+from src.data import load_alpaca_sft
 
 
 def run(args):
@@ -13,7 +13,7 @@ def run(args):
     model, tokenizer = load_model(args.model_name)
 
     # load and tokenize dataset
-    ds = load_alpaca_ds(tokenizer)
+    ds = load_alpaca_sft(tokenizer)
 
     # get LORA and SFTTrainer
     model = get_peft_model(model)
