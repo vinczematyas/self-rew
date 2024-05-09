@@ -17,12 +17,16 @@ def load_alpaca_sft(tokenizer):
         instructions = examples["instruction"]
         inputs       = examples["input"]
         outputs      = examples["output"]
+
         texts = []
         for instruction, input, output in zip(instructions, inputs, outputs):
             # Must add EOS_TOKEN, otherwise your generation will go on forever!
             text = alpaca_prompt.format(instruction, input, output) + EOS_TOKEN
             texts.append(text)
-        return { "text" : texts, }
+
+        return {
+            "text" : texts,
+        }
 
     dataset = load_dataset("yahma/alpaca-cleaned", split = "train")
     dataset = dataset.map(formatting_prompts_func, batched = True)
@@ -30,6 +34,8 @@ def load_alpaca_sft(tokenizer):
 
 def load_capybara_ift(tokenizer):
     def chatml_format(example):
+        system = ""  # INFO: no system message in this dataset
+
         # get everything except the last message as input
         prompt = tokenizer.apply_chat_template(example["chosen"][:-1], tokenize=False, add_generation_prompt=True)
         # get the last assistant responses
