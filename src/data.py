@@ -42,6 +42,6 @@ def load_capybara_ift(tokenizer):
             "rejected": rejected,
         }
 
-    datasat = load_dataset("argilla/distilabel-capybara-dpo-7k-binarized", split = "train")
+    dataset = load_dataset("argilla/distilabel-capybara-dpo-7k-binarized", split = "train")
     dataset = dataset.map(chatml_format, remove_columns=dataset.column_names)
     return dataset
