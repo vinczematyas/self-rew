@@ -44,7 +44,7 @@ peft_model = get_peft_model(args, model)
 dataset = load_sft_dataset(args, dataset_dict, percentage=1)
 
 # Train model
-trainer = get_sft_trainer(args, model, tokenizer, dataset)
+trainer = get_sft_trainer(args, peft_model, tokenizer, dataset)
 trainer.train()
 trainer.model.save_pretrained(args.output_dir)
 
