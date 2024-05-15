@@ -15,7 +15,7 @@ parser.add_argument("--run_name", type=str, default="dev")
 parser.add_argument("--seed", type=int, default=420)
 parser.add_argument("--max_seq_length", type=int, default=2048)
 parser.add_argument("--lora_r", type=int, default=8)
-parser.add_argument("--lora_alpha", type=int, default=32)args = parser.parse_args()
+parser.add_argument("--lora_alpha", type=int, default=32)
 args = parser.parse_args()
 
 model_dict = {
