@@ -1,76 +1,48 @@
 import os
+import torch
 import argparse
 import pandas as pd
 from termcolor import colored
 from datasets import load_dataset
 from transformers import TrainingArguments
-from unsloth import FastLanguageModel, SFTTrainer
+from unsloth import FastLanguageModel
+from trl import SFTTrainer
 
+from src.model import load_model, get_peft_model
+from src.trainer import get_sft_trainer
+from src.data import load_sft_dataset
 
 parser = argparse.ArgumentParser(description="Phase 0: Supervised Fine-Tuning.")
 parser.add_argument("-m", "--model_name", type=str, default="unsloth/tinyllama-bnb-4bit")
-parser.add_argument("--run_name", type=str, required=True)
+parser.add_argument("-d", "--dataset_name", type=str, default="HuggingFaceH4/deita-10k-v0-sft")
+parser.add_argument("--run_name", type=str, default="dev")
 parser.add_argument("--seed", type=int, default=420)
 parser.add_argument("--max_seq_length", type=int, default=2048)
+parser.add_argument("--lora_r", type=int, default=8)
+parser.add_argument("--lora_alpha", type=int, default=32)
 args = parser.parse_args()
 
+# Model and dataset dictionaries for easy access
 model_dict = {
-    "unsloth/tinyllama-bnb-4bit": "tinyllama"
+    "unsloth/tinyllama-bnb-4bit": "tinyllama",
+    "unsloth/llama-3-8b-bnb-4bit": "llama-8b".
+}
+dataset_dict = {
+    "HuggingFaceH4/deita-10k-v0-sft": "deita-10k-v0-sft",
 }
 
+# Create output directory
 args.output_dir = f"models/{model_dict[args.model_name]}/{args.run_name}/sft"
 
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = args.model_name,
-    max_seq_length = args.max_seq_length,
-    dtype = dtype,
-    load_in_4bit = load_in_4bit,
-)
+# Load model and tokenizer + LORA
+model, tokenizer = load_model(args)
+peft_model = get_peft_model(model, args)
 
-model = FastLanguageModel.get_peft_model(
-    model,
-    r = 16, 
-    target_modules = ["q_proj", "k_proj", "v_proj", "o_proj",
-                      "gate_proj", "up_proj", "down_proj",],
-    lora_alpha = 16,
-    lora_dropout = 0,
-    bias = "none",
-    use_gradient_checkpointing = True,
-    random_state = args.seed,
-)
+# Load dataset
+dataset = load_sft_dataset(args, dataset_dict, percentage=1)
 
-dataset = load_dataset("HuggingFaceH4/deita-10k-v0-sft", split=['train_sft[:1%]', 'validation_sft[:1%]'])
-
-training_args = TrainingArguments(
-    do_eval=True,
-    evaluation_strategy = "steps",
-    eval_steps = 100,
-    save_strategy = "epoch",
-    per_device_train_batch_size = 4, #Zephyr
-    gradient_accumulation_steps = 4, #Zephyr
-    per_device_eval_batch_size = 4,
-    warmup_ratio = 0.1, #Zephyr
-    num_train_epochs = 3, #Zephyr
-    learning_rate = 2.0e-05, #Zephyr
-    fp16 = not torch.cuda.is_bf16_supported(),
-    bf16 = torch.cuda.is_bf16_supported(),
-    logging_steps = 100,
-    optim = "adamw_8bit",
-    lr_scheduler_type = "cosine", #Zephyr
-    seed = 3407,
-    output_dir = args.output_dir,
-)
-
-trainer = SFTTrainer(
-    model = model,
-    tokenizer = tokenizer,
-    train_dataset = dataset[0],
-    eval_dataset = dataset[1],
-    max_seq_length = args.max_seq_length,
-    args = training_args
-    )
-
-trainer_stats = trainer.train()
-
+# Train model
+trainer = get_sft_trainer(args, model, tokenizer, dataset)
+trainer.train()
 trainer.model.save_pretrained(args.output_dir)
 
