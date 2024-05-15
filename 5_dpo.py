@@ -19,11 +19,11 @@ parser.add_argument("--lora_alpha", type=int, default=32)
 args = parser.parse_args()
 
 model_dict = {
-    "unsloth/tinyllama-bnb-4bit": "tinyllama"
-    "unsloth/llama-3-8b-4bit": "llama-8b"
+    "unsloth/tinyllama-bnb-4bit": "tinyllama",
+    "unsloth/llama-3-8b-4bit": "llama-8b",
 }
 dataset_dict = {
-    "argilla/dpo-mix-7k": "dpo-mix-7k"
+    "argilla/dpo-mix-7k": "dpo-mix-7k",
 }
 
 # Create output directory
