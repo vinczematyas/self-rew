@@ -21,7 +21,6 @@ parser.add_argument("--seed", type=int, default=420)
 parser.add_argument("--max_seq_length", type=int, default=2048)
 parser.add_argument("--lora_r", type=int, default=8)
 parser.add_argument("--lora_alpha", type=int, default=32)
-
 args = parser.parse_args()
 
 # Model and dataset dictionaries for easy access
@@ -41,7 +40,7 @@ model, tokenizer = load_model(args)
 peft_model = get_peft_model(args, model)
 
 # Load dataset
-dataset = load_sft_dataset(args, dataset_dict, percentage=1)
+dataset = load_sft_dataset(args, dataset_dict, percentage=args.data_percentage)
 
 # Train model
 trainer = get_sft_trainer(args, peft_model, tokenizer, dataset)

@@ -6,27 +6,41 @@ def load_sft_dataset(args, dataset_dict, percentage = 1):
             args.dataset_name, 
             split=[f"train_sft[:{percentage}%]", f"test_sft[:{percentage}%]"]
         )
+        dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
     return dataset
 
-def load_capybara_ift(tokenizer):
-    def chatml_format(example):
-        system = ""  # INFO: no system message in this dataset
+def load_dpo_dataset(args, dataset_dict, percentage = 1):
+    if dataset_dict[args.dataset_name] == "dpo-mix-7k":
+        dataset = load_dataset(
+            args.dataset_name, 
+            split=[f"train[:{percentage}%]", f"test[:{percentage}%]"]
+        )
+        dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
 
-        # get everything except the last message as input
-        prompt = tokenizer.apply_chat_template(example["chosen"][:-1], tokenize=False, add_generation_prompt=True)
+        column_names = list(dataset["train"].features)
 
-        # get the last assistant responses
-        chosen = example["chosen"][-1]["content"] + "</s>" 
-        rejected = example["rejected"][-1]["content"] + "</s>" 
+        def apply_dpo_template(example):
+            if all(k in example.keys() for k in ("chosen", "rejected")):
+            # For DPO, the inputs are triples of (prompt, chosen, rejected), where `chosen` and `rejected` are the final turn of a dialogue
+            # We therefore need to extract the N-1 turns to form the prompt
+            prompt_messages = example["chosen"][:-1]
+            # Now we extract the final turn to define chosen/rejected responses
+            chosen_messages = example["chosen"][-1:]
+            rejected_messages = example["rejected"][-1:]
+            example["text_chosen"] = tokenizer.apply_chat_template(chosen_messages, tokenize=False)
+            example["text_rejected"] = tokenizer.apply_chat_template(rejected_messages, tokenize=False)
+            example["text_prompt"] = tokenizer.apply_chat_template(prompt_messages, tokenize=False)
+        return example
 
-        return {
-            "prompt": system + prompt,
-            "chosen": chosen,
-            "rejected": rejected,
-        }
+        dataset = dataset.map(
+            apply_dpo_template,
+            remove_columns=column_names,
+            desc="Formatting comparisons with prompt template",
+        )
+        for split in ["train", "test"]:
+            dataset[split] = dataset[split].rename_columns(
+                {"text_prompt": "prompt", "text_chosen": "chosen", "text_rejected": "rejected"}
+            )
 
-    dataset = load_dataset("argilla/distilabel-capybara-dpo-7k-binarized", split = "train")
-    print(dataset)
-    dataset = dataset.filter(lambda r: r["messages"] < 2)
-    dataset = dataset.map(chatml_format, remove_columns=dataset.column_names)
-    return dataset
+        return dataset
+
