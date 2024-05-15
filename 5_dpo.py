@@ -7,6 +7,10 @@ from transformers import TrainingArguments, AutoTokenizer
 from unsloth import FastLanguageModel, PatchDPOTrainer
 PatchDPOTrainer()
 
+from src.model import load_model, get_peft_model
+from src.trainer import get_dpo_trainer
+from src.data import load_dpo_dataset
+
 parser = argparse.ArgumentParser(description='Phase 5: Direct Preference Optimization')
 parser.add_argument("-m", "--model_name", type=str, default="unsloth/tinyllama-bnb-4bit")
 parser.add_argument("-d", "--dataset_name", type=str, default="argilla/dpo-mix-7k")
@@ -34,7 +38,7 @@ model, tokenizer = load_model(args)
 peft_model = get_peft_model(args, model)
 
 # Lode dataset
-dataset = load_dpo_dataset(args, dataset_dict, percentage=args.data_percentage)
+dataset = load_dpo_dataset(args, tokenizer, dataset_dict, percentage=args.data_percentage)
 
 # Train model
 trainer = get_dpo_trainer(args, peft_model, tokenizer, dataset)

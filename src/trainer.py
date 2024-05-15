@@ -36,7 +36,7 @@ def get_sft_trainer(args, model, tokenizer, dataset):
 
     return trainer
 
-def get_dpi_trainer(args, model, tokenizer, dataset):
+def get_dpo_trainer(args, model, tokenizer, dataset):
     training_args = TrainingArguments(
         do_eval=True,
         evaluation_strategy = "steps",
