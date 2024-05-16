@@ -34,7 +34,7 @@ dataset_dict = {
 assert args.dataset_name in dataset_dict, f"Dataset {args.dataset_name} not found in dataset_dict: {dataset_dict}"
 
 # Create output directory
-args.output_dir = f"models/{model_dict[args.model_name]}/{args.run_name}/dpo"
+args.output_dir = f"models/{model_dict[args.model_name]}/dpo/{args.run_name}"
 
 # Load model and tokenizer + LORA
 model, tokenizer = load_model(args)
@@ -47,3 +47,4 @@ dataset = load_dpo_dataset(args, tokenizer, dataset_dict, percentage=args.data_p
 trainer = get_dpo_trainer(args, peft_model, tokenizer, dataset)
 trainer.train()
 trainer.model.save_pretrained(f"{args.output_dir}/checkpoint_final")
+

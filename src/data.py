@@ -17,6 +17,14 @@ def load_dpo_dataset(args, tokenizer, dataset_dict, percentage = 1):
             split=[f"train[:{percentage}%]", f"test[:{percentage}%]"]
         )
         dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
+
+        def preprocess_data(example):
+            example["prompt"] = example["prompt"][0]["content"]
+            example["chosen"] = example["chosen"][0]["content"]
+            example["rejected"] = example["rejected"][0]["content"]
+            return example
+        dataset = dataset.map(preprocess_data, remove_columns="dataset")
+
     return dataset
 
 

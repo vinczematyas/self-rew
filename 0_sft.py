@@ -23,17 +23,19 @@ parser.add_argument("--lora_r", type=int, default=8)
 parser.add_argument("--lora_alpha", type=int, default=32)
 args = parser.parse_args()
 
-# Model and dataset dictionaries for easy access
 model_dict = {
     "unsloth/tinyllama-bnb-4bit": "tinyllama",
     "unsloth/llama-3-8b-bnb-4bit": "llama-8b",
 }
+assert args.model_name in model_dict, f"Model {args.model_name} not found in model_dict: {model_dict}"
+
 dataset_dict = {
     "HuggingFaceH4/deita-10k-v0-sft": "deita-10k-v0-sft",
 }
+assert args.dataset_name in dataset_dict, f"Dataset {args.dataset_name} not found in dataset_dict: {dataset_dict}"
 
 # Create output directory
-args.output_dir = f"models/{model_dict[args.model_name]}/{args.run_name}/sft"
+args.output_dir = f"models/{model_dict[args.model_name]}/sft/{args.run_name}"
 
 # Load model and tokenizer + LORA
 model, tokenizer = load_model(args)
