@@ -11,6 +11,7 @@ from trl import SFTTrainer
 from src.model import load_model, get_peft_model
 from src.trainer import get_sft_trainer
 from src.data import load_sft_dataset
+from src.utils import model_dict, dataset_dic
 
 parser = argparse.ArgumentParser(description="Phase 0: Supervised Fine-Tuning.")
 parser.add_argument("-m", "--model_name", type=str, default="unsloth/tinyllama-bnb-4bit")
@@ -23,16 +24,7 @@ parser.add_argument("--lora_r", type=int, default=8)
 parser.add_argument("--lora_alpha", type=int, default=32)
 args = parser.parse_args()
 
-model_dict = {
-    "unsloth/tinyllama-bnb-4bit": "tinyllama",
-    "unsloth/llama-3-8b-bnb-4bit": "llama-8b",
-}
-assert args.model_name in model_dict, f"Model {args.model_name} not found in model_dict: {model_dict}"
-
-dataset_dict = {
-    "HuggingFaceH4/deita-10k-v0-sft": "deita-10k-v0-sft",
-}
-assert args.dataset_name in dataset_dict, f"Dataset {args.dataset_name} not found in dataset_dict: {dataset_dict}"
+assert args.model_name in model_dict and args.dataset_name in dataset_dict
 
 # Create output directory
 args.output_dir = f"models/{model_dict[args.model_name]}/sft/{args.run_name}"
