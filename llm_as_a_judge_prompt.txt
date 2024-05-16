@@ -30,7 +30,6 @@ is very well written, logical, easy-to-follow, engaging and insightful.
 <question>{prompt}</question>
 <response>{response}</response>
 
-Please first briefly describe your reasoning (in less than 100 words), and
-then write “Score: <rating>” in the last line. Answer in the style of an AI Assistant,
+Please first write "Score: <rating>" in the first line, then briefly describe your reasoning (in less than 100 words). Answer in the style of an AI Assistant,
 with knowledge from web search if needed. To derive the final score based on the
 criteria, let’s think step-by-step.
