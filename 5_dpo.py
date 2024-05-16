@@ -13,7 +13,7 @@ from src.data import load_dpo_dataset
 
 parser = argparse.ArgumentParser(description='Phase 5: Direct Preference Optimization')
 parser.add_argument("-m", "--model_name", type=str, default="unsloth/tinyllama-bnb-4bit")
-parser.add_argument("-d", "--dataset_name", type=str, default="argilla/dpo-mix-7k")
+parser.add_argument("-d", "--dataset_name", type=str, default="alvarobartt/dpo-mix-7k-simplified")
 parser.add_argument("--data_percentage", type=int, default=1)
 parser.add_argument("--run_name", type=str, default="dev")
 parser.add_argument("--seed", type=int, default=420)
@@ -26,9 +26,12 @@ model_dict = {
     "unsloth/tinyllama-bnb-4bit": "tinyllama",
     "unsloth/llama-3-8b-4bit": "llama-8b",
 }
+assert args.model_name in model_dict, f"Model {args.model_name} not found in model_dict: {model_dict}"
+
 dataset_dict = {
-    "argilla/dpo-mix-7k": "dpo-mix-7k",
+    "alvarobartt/dpo-mix-7k-simplified": "dpo-mix-7k-simplified",
 }
+assert args.dataset_name in dataset_dict, f"Dataset {args.dataset_name} not found in dataset_dict: {dataset_dict}"
 
 # Create output directory
 args.output_dir = f"models/{model_dict[args.model_name]}/{args.run_name}/dpo"

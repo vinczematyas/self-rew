@@ -1,4 +1,5 @@
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
+
 
 def load_sft_dataset(args, dataset_dict, percentage = 1):
     if dataset_dict[args.dataset_name] == "deita-10k-v0-sft":
@@ -9,38 +10,45 @@ def load_sft_dataset(args, dataset_dict, percentage = 1):
         dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
     return dataset
 
-def load_dpo_dataset(args, dataset_dict, percentage = 1):
-    if dataset_dict[args.dataset_name] == "dpo-mix-7k":
+def load_dpo_dataset(args, tokenizer, dataset_dict, percentage = 1):
+    if dataset_dict[args.dataset_name] == "dpo-mix-7k-simplified":
         dataset = load_dataset(
             args.dataset_name, 
             split=[f"train[:{percentage}%]", f"test[:{percentage}%]"]
         )
         dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
+    return dataset
 
-        column_names = list(dataset["train"].features)
 
-        def apply_dpo_template(example):
-            if all(k in example.keys() for k in ("chosen", "rejected")):
-            # For DPO, the inputs are triples of (prompt, chosen, rejected), where `chosen` and `rejected` are the final turn of a dialogue
-            # We therefore need to extract the N-1 turns to form the prompt
-            prompt_messages = example["chosen"][:-1]
-            # Now we extract the final turn to define chosen/rejected responses
-            chosen_messages = example["chosen"][-1:]
-            rejected_messages = example["rejected"][-1:]
-            example["text_chosen"] = tokenizer.apply_chat_template(chosen_messages, tokenize=False)
-            example["text_rejected"] = tokenizer.apply_chat_template(rejected_messages, tokenize=False)
-            example["text_prompt"] = tokenizer.apply_chat_template(prompt_messages, tokenize=False)
-        return example
+if __name__ == "__main__":
+    from transformers import AutoTokenizer
+    import argparse
+    from termcolor import colored
 
-        dataset = dataset.map(
-            apply_dpo_template,
-            remove_columns=column_names,
-            desc="Formatting comparisons with prompt template",
-        )
-        for split in ["train", "test"]:
-            dataset[split] = dataset[split].rename_columns(
-                {"text_prompt": "prompt", "text_chosen": "chosen", "text_rejected": "rejected"}
-            )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", type=str, default="HuggingFaceH4/deita-10k-v0-sft")
+    parser.add_argument("--data_percentage", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=420)
+    args = parser.parse_args()
 
-        return dataset
+    dataset_dict = {
+        "HuggingFaceH4/deita-10k-v0-sft": "deita-10k-v0-sft",
+        "alvarobartt/dpo-mix-7k-simplified": "dpo-mix-7k-simplified",
+    }
 
+    sft_dataset = load_sft_dataset(
+        args,
+        dataset_dict,
+        percentage = 1
+    )
+    print(f"{colored('Loaded SFT dataset', 'cyan')}: {sft_dataset}")
+
+    args.dataset_name = "alvarobartt/dpo-mix-7k-simplified"
+    tokenizer = AutoTokenizer.from_pretrained("unsloth/tinyllama-bnb-4bit")
+    dpo_dataset = load_dpo_dataset(
+        args,
+        tokenizer,
+        dataset_dict,
+        percentage = 1
+    )
+    print(f"{colored('Loaded DPO dataset', 'cyan')}: {dpo_dataset}")
