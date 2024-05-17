@@ -2,7 +2,7 @@ from unsloth import FastLanguageModel
 
 def load_model(args):
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name = args.model_name,
+        model_name = args.model,
         max_seq_length = args.max_seq_length,
         dtype = None,
         load_in_4bit = True,
