@@ -6,7 +6,7 @@ def load_sft_dataset(args, percentage = 1):
             args.dataset,
             split=[f"train_sft[:{percentage}%]", f"test_sft[:{percentage}%]"]
         )
-        dataset = dataset[0]  # train only
+        dataset = DatasetDict({"train": dataset[0], "test": dataset[1]})
     elif args.dataset == "habanoz/lima-chat-format":
         dataset = load_dataset(
             args.dataset, 
