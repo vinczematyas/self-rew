@@ -1,35 +1,32 @@
 import argparse
 from tqdm import tqdm
-from unsloth import FastLanguageModel
-from transformers import TextStreamer
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
+import os
 import re
 
 from src.model import load_model
-from src.utils import model_dict, dataset_dict
 from src.data import load_sft_dataset
 
-parser = argparse.ArgumentParser(description='Phase 5: Direct Preference Optimization')
-parser.add_argument("-m", "--model_name", type=str, default="unsloth/Phi-3-mini-4k-instruct-bnb-4bit")
-parser.add_argument("-d", "--dataset_name", type=str, default="habanoz/lima-chat-format")
+parser = argparse.ArgumentParser(description='Phase 3: Reward Generation')
+parser.add_argument("-m", "--model", type=str, default="unsloth/Phi-3-mini-4k-instruct-bnb-4bit")
+parser.add_argument("-d", "--dataset", type=str, default="HuggingFaceH4/deita-10k-v0-sft")
 parser.add_argument("--data_percentage", type=int, default=1)
-parser.add_argument("--run_name", type=str, default="dev")
+parser.add_argument("--run_path", type=str, default="dev", help="Path to save the dataset inside the 'datasets/' folder")
 parser.add_argument("--seed", type=int, default=420)
-parser.add_argument("--max_seq_length", type=int, default=2048)
+parser.add_argument("--max_seq_length", type=int, default=4096)
 args = parser.parse_args()
 
-assert args.model_name in model_dict and args.dataset_name in dataset_dict
-
-    # Create output directory
-args.output_dir = f"models/{model_dict[args.model_name]}/generation/{args.run_name}"
+args.output_dir = f"datasets/{args.run_name}"
+os.makedirs(args.output_dir, exist_ok=True)
 
 # Load model and tokenizer for generation
 model, tokenizer = load_model(args)
 FastLanguageModel.for_inference(model)
-text_streamer = TextStreamer(tokenizer)
 
-# Load dataset (only prompt-response pairs)
-dataset = load_sft_dataset(args, dataset_dict, percentage=args.data_percentage)
+# Load dataset
+dataset = load_sft_dataset(args, percentage=args.data_percentage)
+if type(dataset) == DatasetDict:
+    dataset = dataset["train"]
 
 # load LLM-as-a-Judge prompt
 with open('llm_as_a_judge_prompt.txt', 'r') as f:
@@ -37,7 +34,6 @@ with open('llm_as_a_judge_prompt.txt', 'r') as f:
     f.close()
 
 pattern = r"[Ss]core: ([0-5])"
-scores = []
 new_dataset = {"prompt": [], "response": [], "score": []}
 
 for sample in tqdm(dataset.iter(batch_size=1)):
@@ -45,23 +41,21 @@ for sample in tqdm(dataset.iter(batch_size=1)):
     response = sample["response"]
 
     # create formatted prompt for LLM-as-a-Judge
-    judge_formatted_prompt = tokenizer(
-        DEFAULT_LLM_AS_JUDGE_PROMPT.format(prompt=prompt, response=response),
-        return_tensors="pt"
-    ).to("cuda")
+    judge_formatted_prompt = DEFAULT_LLM_AS_JUDGE_PROMPT.format(prompt=prompt, response=response)
 
-    generated_answer = tokenizer.batch_decode(
+    tokenized_judge_formatted_prompt = tokenizer.tokenize(judge_formatted_prompt, return_tensors="pt").to("cuda")
+
+    generated_response = tokenizer.batch_decode(
         model.generate(
             **judge_formatted_prompt,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
-            num_return_sequences=1,
-            max_new_tokens=100  # score is at the beginning of the answer
+            num_return_sequences=1,  # TODO: do we need this
         )
     )[0]
 
     # extract score from generated answer
-    score = re.findall(pattern, generated_answer)
+    score = re.findall(pattern, generated_response)
 
     if score:
         new_dataset["prompt"].append(prompt)
@@ -70,6 +64,5 @@ for sample in tqdm(dataset.iter(batch_size=1)):
 
 # save new dataset
 new_dataset = Dataset.from_dict(new_dataset)
-new_dataset.save_to_disk(args.output_dir)
-new_dataset.push_to_hub("vinczematyas/llm-as-a-judge-scores", private=True)  # ISSUE: with ssh the key does not seem to work
+new_dataset.to_parquet(f"{args.output_dir}/generated_scores.parquet")
 
