@@ -24,7 +24,7 @@ model, tokenizer = load_model(args)
 peft_model = get_peft_model(args, model)
 
 # Load dataset
-dataset = load_sft_dataset(args, percentage=args.data_percentage)
+dataset = load_sft_dataset(args, percentage=args.data_percentage).shuffle(seed=args.seed)
 
 # Train model
 trainer = get_sft_trainer(args, peft_model, tokenizer, dataset)
