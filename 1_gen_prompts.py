@@ -11,17 +11,15 @@ parser = argparse.ArgumentParser(description="Phase 1: Prompt Generation")
 parser.add_argument("-m", "--model", type=str, default="unsloth/Phi-3-mini-4k-instruct-bnb-4bit")
 parser.add_argument("-d", "--dataset", type=str, default="HuggingFaceH4/deita-10k-v0-sft")
 parser.add_argument("--data_percentage", type=int, default=1)
-parser.add_argument("--run_name", type=str, default="dev")
+parser.add_argument("--run_path", type=str, default="dev")
 parser.add_argument("--seed", type=int, default=420)
 parser.add_argument("--max_seq_length", type=int, default=2048)
 parser.add_argument("--n_shot", type=int, default=8)
 args = parser.parse_args()
 
-# Load model and tokenizer for generation
 model, tokenizer = load_model(args)
 FastLanguageModel.for_inference(model)
 
-# Load dataset (only prompt-response pairs)
 dataset = load_sft_dataset(args, percentage=args.data_percentage).shuffle(seed=args.seed)
 
 new_dataset = {"prompt": []}
@@ -56,6 +54,6 @@ for sample in tqdm(dataset.iter(batch_size=args.n_shot), total=len(dataset)):
         new_prompts = new_prompts[end+7:]
 
 new_dataset = Dataset.from_dict(new_dataset)
-os.makedirs(f"datasets/{args.run_name}", exist_ok=True)
+os.makedirs(f"datasets/{args.run_path}", exist_ok=True)
 new_dataset.to_parquet(f"datasets/{args.run_name}/generated_prompts.parquet")
 
