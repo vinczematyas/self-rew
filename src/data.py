@@ -1,6 +1,4 @@
-from datasets import load_dataset, DatasetDict, Dataset
-
-from src.utils import dataset_dict
+from datasets import load_dataset, DatasetDict
 
 def load_sft_dataset(args, percentage = 1):
     if args.dataset == "HuggingFaceH4/deita-10k-v0-sft":
@@ -27,7 +25,7 @@ def load_sft_dataset(args, percentage = 1):
 
 
 def load_dpo_dataset(args, tokenizer, dataset_dict, percentage = 1):
-    if dataset_dict[args.dataset_name] == "dpo-mix-7k-simplified":
+    if args.dataset == "alvarobartt/dpo-mix-7k-simplified":
         dataset = load_dataset(
             args.dataset_name, 
             split=[f"train[:{percentage}%]", f"test[:{percentage}%]"]

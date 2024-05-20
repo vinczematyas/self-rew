@@ -1,17 +1,9 @@
 import os
-import torch
 import argparse
-import pandas as pd
-from termcolor import colored
-from datasets import load_dataset
-from transformers import TrainingArguments
-from unsloth import FastLanguageModel
-from trl import SFTTrainer
 
 from src.model import load_model, get_peft_model
 from src.trainer import get_sft_trainer
 from src.data import load_sft_dataset
-from src.utils import model_dict, dataset_dic
 
 parser = argparse.ArgumentParser(description="Phase 0: Supervised Fine-Tuning.")
 parser.add_argument("-m", "--model_name", type=str, default="unsloth/tinyllama-bnb-4bit")

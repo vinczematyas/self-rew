@@ -1,10 +1,5 @@
-import torch
 import argparse
-from datasets import load_dataset, DatasetDict
-from trl import DPOTrainer
-from peft import PeftModel
-from transformers import TrainingArguments, AutoTokenizer
-from unsloth import FastLanguageModel, PatchDPOTrainer
+from unsloth import PatchDPOTrainer
 PatchDPOTrainer()
 
 from src.model import load_model, get_peft_model
